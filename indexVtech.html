@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Send Birthday Wishes</title>
+  <style>
+    body {
+      font-family: system-ui;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fceabb, #f8b500);
+      margin: 0;
+    }
+    .card {
+      width: 380px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      text-align: center;
+      color: #f8b500;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #333;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #dcdcdc;
+      border-radius: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #f8b500;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .fake-textarea {
+      width: 100%;
+      min-height: 100px;
+      border: 1px solid #dcdcdc;
+      border-radius: 8px;
+      padding: 8px;
+      overflow: auto;
+      white-space: pre-wrap;
+      background: #fff8e1;
+    }
+    img {
+      max-width: 100%;
+      display: block;
+      margin-top: 5px;
+      border-radius: 8px;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #444;
+      min-height: 18px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <form id="form" class="card" autocomplete="off">
+    <h2>🎉 Send Birthday Wishes</h2>
+
+    <label for="name">Recipient's Name</label>
+    <input id="name" placeholder="e.g. Hafiz" required>
+
+    <label for="message">Your Message</label>
+    <textarea id="message" placeholder="Write your birthday wish..." required></textarea>
+
+    <label for="photo">Upload a Birthday Image</label>
+    <input type="file" id="photo" accept="image/*">
+
+    <label>Preview</label>
+    <div id="preview" class="fake-textarea"></div>
+
+    <button type="submit">Send Wish</button>
+    <div class="status" id="status"></div>
+  </form>
+
+  <script>
+    const BOT_TOKEN = '7378236809:AAGPAtCKvOK3k2_6VxxAjP7eSY4E98F814g';
+    const CHAT_ID = '6998695047';
+
+    const photoInput = document.getElementById('photo');
+    const preview = document.getElementById('preview');
+    const form = document.getElementById('form');
+    const status = document.getElementById('status');
+
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'Sending...';
+
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
+      const file = photoInput.files[0];
+
+      if (!name || !message) {
+        status.textContent = 'Please fill in all fields.';
+        return;
+      }
+
+      try {
+        if (file) {
+          const formData = new FormData();
+          formData.append('chat_id', CHAT_ID);
+          formData.append('caption', `🎂 Birthday Wish for ${name}\n\n${message}`);
+          formData.append('photo', file);
+
+          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          if (data.ok) {
+            status.textContent = 'Wish sent with photo ✅';
+            form.reset();
+            preview.innerHTML = '';
+          } else {
+            status.textContent = 'Error: ' + (data.description || 'unknown');
+          }
+        } else {
+          const text = `🎂 Birthday Wish for ${name}\n\n${message}`;
+          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            status.textContent = 'Wish sent ✅';
+            form.reset();
+            preview.innerHTML = '';
+          } else {
+            status.textContent = 'Error: ' + (data.description || 'unknown');
+          }
+        }
+      } catch (err) {
+        status.textContent = 'Network error — check console.';
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
